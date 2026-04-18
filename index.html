@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau — Adhérence</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{overflow:hidden;background:#f0ede8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+#wb{width:100vw;height:100vh;overflow:hidden;cursor:grab;user-select:none;position:relative;}
+#wb.grabbing{cursor:grabbing;}
+#canvas{position:absolute;top:0;left:0;width:5000px;height:4000px;}
+.node{position:absolute;}
+.sticky{border-radius:5px;padding:14px 16px;font-size:13px;line-height:1.55;}
+.sy{background:#FFF9C4;border:1px solid #d4c800;color:#3d3400;}
+.sw{background:#fff;border:1px solid #ddd;color:#222;}
+.sa{background:#FAEEDA;border:1px solid #FAC775;color:#633806;}
+.sk{background:#1e1e1e;color:#f0f0f0;}
+.zone-title{position:absolute;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#aaa9a2;white-space:nowrap;}
+.big{font-size:18px;font-weight:600;line-height:1.3;}
+.body{font-size:13px;line-height:1.6;}
+.sub{font-size:11px;opacity:.65;margin-top:6px;line-height:1.5;}
+.label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.55;margin-bottom:5px;}
+.chain{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:9px;}
+.chip{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:500;}
+.c-r{background:#F09595;color:#501313;}
+.c-o{background:#EF9F27;color:#412402;}
+.c-y{background:#FAC775;color:#633806;}
+.c-p{background:#F7C1C1;color:#791F1F;}
+.arr-chip{font-size:12px;color:#bbb;}
+.math-wrap{display:flex;border-radius:8px;overflow:hidden;border:1px solid #ddd;}
+.mc{padding:14px 16px;flex:1;}
+.mc.bad{background:#fff5f5;}
+.mc.good{background:#f3fbed;}
+.mc-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.mc.bad .mc-lbl{color:#A32D2D;}
+.mc.good .mc-lbl{color:#3B6D11;}
+.mc-rate{font-size:20px;font-weight:600;margin:2px 0 3px;}
+.mc.bad .mc-rate{color:#E24B4A;}
+.mc.good .mc-rate{color:#639922;}
+.mc-sub{font-size:11px;color:#999;line-height:1.4;}
+.mc-res{font-size:12px;font-weight:600;border-top:1px solid rgba(0,0,0,.07);margin-top:8px;padding-top:8px;}
+.mc.bad .mc-res{color:#A32D2D;}
+.mc.good .mc-res{color:#3B6D11;}
+.mc-vs{display:flex;align-items:center;padding:0 12px;font-size:13px;font-weight:600;color:#bbb;background:#fafaf8;}
+.pyr{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.pr{display:flex;align-items:center;justify-content:center;height:34px;border-radius:4px;font-size:11px;font-weight:500;color:#fff;letter-spacing:.02em;}
+.pr1{width:240px;background:#1a1a1a;font-size:14px;font-weight:600;}
+.pr2{width:200px;background:#2e2e2e;}
+.pr3{width:162px;background:#454545;}
+.pr4{width:124px;background:#5e5e5e;}
+.pr5{width:86px;background:#808080;font-size:10px;}
+.sc{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;width:190px;}
+.sc-num{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;margin-bottom:7px;}
+.n1{background:#E6F1FB;color:#0C447C;}
+.n2{background:#E1F5EE;color:#085041;}
+.n3{background:#FAEEDA;color:#633806;}
+.n4{background:#EEEDFE;color:#534AB7;}
+.n5{background:#EAF3DE;color:#3B6D11;}
+.sc-t{font-size:12px;font-weight:600;color:#1a1a1a;line-height:1.35;margin-bottom:4px;}
+.sc-s{font-size:11px;color:#888;line-height:1.45;}
+.stag{font-size:10px;padding:2px 7px;border-radius:999px;margin-top:6px;display:inline-block;font-weight:500;margin-right:3px;}
+.tb{background:#E6F1FB;color:#185FA5;}
+.tg{background:#EAF3DE;color:#3B6D11;}
+.ta{background:#FAEEDA;color:#854F0B;}
+.tp{background:#EEEDFE;color:#534AB7;}
+.tt{background:#E1F5EE;color:#0F6E56;}
+#svg-layer{position:absolute;top:0;left:0;width:5000px;height:4000px;pointer-events:none;}
+#minimap{position:absolute;bottom:16px;right:16px;width:180px;height:120px;background:rgba(255,255,255,.9);border:1px solid #ccc;border-radius:8px;overflow:hidden;}
+#mm-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+#mm-vp{position:absolute;border:2px solid #E24B4A;border-radius:2px;pointer-events:none;}
+#controls{position:absolute;bottom:16px;left:16px;display:flex;gap:6px;}
+#controls button{height:32px;padding:0 13px;border-radius:6px;border:1px solid #ccc;background:#fff;font-size:13px;cursor:pointer;color:#333;}
+#controls button:hover{background:#f0ede8;}
+</style>
+</head>
+<body>
+<div id="wb">
+<div id="canvas">
+<svg id="svg-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<!-- ZONE 1 : LE PROBLÈME -->
+<div class="zone-title" style="left:200px;top:130px;">Le problème</div>
+<div class="node sticky sy" style="left:200px;top:165px;width:250px;transform:rotate(-1.5deg);">
+  <div class="big">Tu n'arrives pas<br>à tenir ton régime</div>
+  <div class="sub">Pas la méthode · C'est l'adhérence</div>
+</div>
+<div class="node sticky sw" style="left:560px;top:240px;width:300px;transform:rotate(1.2deg);">
+  <div class="label">Le cycle infernal</div>
+  <div class="chain">
+    <span class="chip c-r">Restriction</span><span class="arr-chip">→</span>
+    <span class="chip c-o">Frustration</span><span class="arr-chip">→</span>
+    <span class="chip c-y">Craquage</span><span class="arr-chip">→</span>
+    <span class="chip c-p">Yoyo</span>
+  </div>
+</div>
+<div class="node sticky sw" style="left:280px;top:430px;width:255px;transform:rotate(.7deg);font-style:italic;">
+  <div class="body" style="color:#888;">"Est-ce que tu te vois continuer comme ça toute ta vie ?"</div>
+</div>
+
+<!-- ZONE 2 : DÉMO CHIFFRÉE -->
+<div class="zone-title" style="left:1200px;top:100px;">La démonstration chiffrée</div>
+<div class="node" style="left:1200px;top:136px;width:430px;transform:rotate(-.6deg);">
+  <div class="math-wrap">
+    <div class="mc bad">
+      <div class="mc-lbl">Meilleure méthode</div>
+      <div class="mc-rate">−2 kg / sem</div>
+      <div class="mc-sub">Tu détestes · tiens 3 semaines</div>
+      <div class="mc-res">= −6 kg</div>
+    </div>
+    <div class="mc-vs">VS</div>
+    <div class="mc good">
+      <div class="mc-lbl">Méthode que t'adores</div>
+      <div class="mc-rate">−0,5 kg / sem</div>
+      <div class="mc-sub">Tu kiffes · tiens 1 an</div>
+      <div class="mc-res">= −26 kg</div>
+    </div>
+  </div>
+</div>
+<div class="node sticky sa" style="left:1280px;top:320px;width:270px;transform:rotate(1.3deg);">
+  <div class="body"><strong>L'adhérence > la méthode.</strong><br>Toujours, sans exception.</div>
+</div>
+<div class="node sticky sy" style="left:1700px;top:195px;width:185px;transform:rotate(-2.1deg);">
+  <div class="body">La meilleure méthode est celle que tu peux tenir toute ta vie.</div>
+</div>
+
+<!-- ZONE 3 : PYRAMIDE -->
+<div class="zone-title" style="left:2400px;top:110px;">La méthode</div>
+<div class="node" style="left:2400px;top:148px;transform:rotate(.8deg);">
+  <div class="pyr">
+    <div class="pr pr5">Optimisation</div>
+    <div class="pr pr4">Analyse</div>
+    <div class="pr pr3">Tracking</div>
+    <div class="pr pr2">Compréhension</div>
+    <div class="pr pr1">Adhérence — la base</div>
+  </div>
+</div>
+<div class="node sticky sy" style="left:2660px;top:295px;width:175px;transform:rotate(1.8deg);">
+  <div class="body">Adopté + constant = résultat durable</div>
+</div>
+
+<!-- ZONE 4 : 5 ÉTAPES — espacées en diagonale -->
+<div class="zone-title" style="left:250px;top:870px;">Comment construire ton plan</div>
+
+<div class="node sc" style="left:250px;top:910px;transform:rotate(-1.4deg);">
+  <div class="sc-num n1">1</div>
+  <div class="sc-t">Partir de ce que tu fais déjà</div>
+  <div class="sc-s">Ne pas tout changer d'un coup. Construire sur ta routine.</div>
+  <div><span class="stag tb">Quotidien</span></div>
+</div>
+
+<div class="node sc" style="left:650px;top:1050px;transform:rotate(1.6deg);">
+  <div class="sc-num n2">2</div>
+  <div class="sc-t">Analyser ce qui marche pour toi</div>
+  <div class="sc-s">Ce que t'aimes, ce que t'aimes pas. Faire le tri.</div>
+  <div><span class="stag tt">Aime</span><span class="stag tt">N'aime pas</span></div>
+</div>
+
+<div class="node sc" style="left:1080px;top:920px;transform:rotate(-.9deg);">
+  <div class="sc-num n3">3</div>
+  <div class="sc-t">Définir 1 objectif physique précis</div>
+  <div class="sc-s">Sèche ? Masse ? Sans clarté, tu changes en route.</div>
+  <div><span class="stag ta">1 objectif fixe</span></div>
+</div>
+
+<div class="node sc" style="left:1480px;top:1060px;transform:rotate(2deg);width:200px;">
+  <div class="sc-num n4">4</div>
+  <div class="sc-t">Construire le programme d'entraînement</div>
+  <div class="sc-s">Jours réalistes · Exos que tu kiffes · Supprimer les doublons</div>
+  <div><span class="stag tp">Fréquence</span><span class="stag tp">Exos</span></div>
+</div>
+
+<div class="node sc" style="left:1920px;top:910px;transform:rotate(-1.1deg);width:210px;">
+  <div class="sc-num n5">5</div>
+  <div class="sc-t">Ajuster la nutrition sans tout chambouler</div>
+  <div class="sc-s">Partir de ce que tu manges · Ajuster · Toujours itérer.</div>
+  <div><span class="stag tg">Protéines</span><span class="stag tg">Flexibilité</span></div>
+</div>
+
+<!-- ZONE 5 : CTA -->
+<div class="zone-title" style="left:2500px;top:870px;">L'étape suivante</div>
+<div class="node sticky sk" style="left:2500px;top:908px;width:300px;transform:rotate(-.8deg);">
+  <div class="big" style="color:#fff;font-size:16px;">Tu veux qu'on construise ça ensemble ?</div>
+  <div class="sub" style="color:rgba(255,255,255,.5);margin-top:8px;">Je prends X clients/mois pour mettre ce système en place sur mesure.</div>
+  <div style="margin-top:14px;font-size:13px;color:#FFF9C4;font-weight:500;">→ Réserve un appel gratuit · lien en bio</div>
+</div>
+<div class="node sticky sy" style="left:2860px;top:970px;width:175px;transform:rotate(2.2deg);">
+  <div class="body">Ce n'est pas un régime. C'est un mode de vie.</div>
+</div>
+
+</div>
+
+<div id="minimap"><canvas id="mm-canvas" width="180" height="120"></canvas><div id="mm-vp"></div></div>
+<div id="controls">
+  <button id="btn-zi">＋</button>
+  <button id="btn-zo">－</button>
+  <button id="btn-r">Reset</button>
+</div>
+</div>
+
+<script>
+(function(){
+  var wb=document.getElementById('wb');
+  var cv=document.getElementById('canvas');
+  var svgEl=document.getElementById('svg-layer');
+  var mmvp=document.getElementById('mm-vp');
+  var mmc=document.getElementById('mm-canvas');
+  var ctx=mmc.getContext('2d');
+  var CW=5000,CH=4000,mmW=180,mmH=120;
+  var ox=0,oy=0,sc=1;
+  var drag=false,dsx=0,dsy=0,dox=0,doy=0;
+
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+  function applyTransform(){
+    var ow=wb.offsetWidth,oh=wb.offsetHeight;
+    ox=clamp(ox,Math.min(-(CW*sc-ow),0),0);
+    oy=clamp(oy,Math.min(-(CH*sc-oh),0),0);
+    cv.style.transform='translate('+ox+'px,'+oy+'px) scale('+sc+')';
+    cv.style.transformOrigin='0 0';
+    var rx=mmW/(CW*sc),ry=mmH/(CH*sc);
+    var vw=Math.min(wb.offsetWidth*rx,mmW);
+    var vh=Math.min(wb.offsetHeight*ry,mmH);
+    mmvp.style.left=(-ox*rx)+'px';
+    mmvp.style.top=(-oy*ry)+'px';
+    mmvp.style.width=vw+'px';
+    mmvp.style.height=vh+'px';
+    drawMM();
+  }
+
+  function drawMM(){
+    ctx.clearRect(0,0,mmW,mmH);
+    ctx.fillStyle='#f0ede8';
+    ctx.fillRect(0,0,mmW,mmH);
+    var rx=mmW/CW,ry=mmH/CH;
+    cv.querySelectorAll('.node').forEach(function(n){
+      var l=parseInt(n.style.left)||0,t=parseInt(n.style.top)||0;
+      ctx.fillStyle=getComputedStyle(n).backgroundColor||'#fff';
+      ctx.fillRect(l*rx,t*ry,(n.offsetWidth||160)*rx,(n.offsetHeight||80)*ry);
+    });
+  }
+
+  function getCenter(el){
+    var l=parseInt(el.style.left)||0,t=parseInt(el.style.top)||0;
+    return [l+el.offsetWidth/2, t+el.offsetHeight/2];
+  }
+
+  function drawArrows(){
+    svgEl.innerHTML='';
+    var ns='http://www.w3.org/2000/svg';
+    var defs=document.createElementNS(ns,'defs');
+    defs.innerHTML='<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 2L9 5L2 8" fill="none" stroke="#C0BDB5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>';
+    svgEl.appendChild(defs);
+
+    function addArrow(x1,y1,x2,y2,bend){
+      bend=bend||0.5;
+      var mx=(x1+x2)/2,my=(y1+y2)/2;
+      var dx=x2-x1,dy=y2-y1;
+      var len=Math.sqrt(dx*dx+dy*dy);
+      var cx1=x1+dx*0.3+(-dy/len)*len*bend*0.2;
+      var cy1=y1+dy*0.3+(dx/len)*len*bend*0.2;
+      var cx2=x2-dx*0.3+(-dy/len)*len*bend*0.2;
+      var cy2=y2-dy*0.3+(dx/len)*len*bend*0.2;
+      var path=document.createElementNS(ns,'path');
+      path.setAttribute('d','M'+x1+' '+y1+' C'+cx1+' '+cy1+','+cx2+' '+cy2+','+x2+' '+y2);
+      path.setAttribute('fill','none');
+      path.setAttribute('stroke','#C8C5BE');
+      path.setAttribute('stroke-width','1.5');
+      path.setAttribute('stroke-dasharray','6 5');
+      path.setAttribute('marker-end','url(#ah)');
+      svgEl.appendChild(path);
+    }
+
+    var nodes=cv.querySelectorAll('.node');
+    var nArr=Array.from(nodes);
+    var byLabel={};
+    nArr.forEach(function(n,i){byLabel[i]=getCenter(n);});
+
+    setTimeout(function(){
+      var c=function(n){return getCenter(n);};
+      var zone1a=nArr[0],zone1b=nArr[1],zone1c=nArr[2];
+      var z2a=nArr[3],z2b=nArr[4],z2c=nArr[5];
+      var z3a=nArr[6],z3b=nArr[7];
+      var s1=nArr[8],s2=nArr[9],s3=nArr[10],s4=nArr[11],s5=nArr[12];
+      var cta=nArr[13];
+
+      addArrow(c(zone1a)[0]+80,c(zone1a)[1], c(zone1b)[0]-120,c(zone1b)[1]-.5,.3);
+      addArrow(c(zone1a)[0],c(zone1a)[1]+40, c(zone1c)[0],c(zone1c)[1]-30,.2);
+      addArrow(c(zone1b)[0]+80,c(zone1b)[1], c(z2a)[0]-150,c(z2a)[1],.4);
+      addArrow(c(z2a)[0]+60,c(z2a)[1]+40, c(z2b)[0],c(z2b)[1]-20,.2);
+      addArrow(c(z2c)[0]+60,c(z2c)[1], c(z3a)[0]-100,c(z3a)[1],.35);
+      addArrow(c(z3a)[0]+60,c(z3a)[1]+30, c(z3b)[0]-50,c(z3b)[1],.2);
+      addArrow(c(s1)[0]+80,c(s1)[1]+20, c(s2)[0]-60,c(s2)[1],.3);
+      addArrow(c(s2)[0]+80,c(s2)[1]-10, c(s3)[0]-60,c(s3)[1],.25);
+      addArrow(c(s3)[0]+80,c(s3)[1]+15, c(s4)[0]-70,c(s4)[1],.3);
+      addArrow(c(s4)[0]+80,c(s4)[1]-10, c(s5)[0]-70,c(s5)[1],.25);
+      addArrow(c(s5)[0]+80,c(s5)[1]+20, c(cta)[0]-100,c(cta)[1],.4);
+      drawMM();
+    },300);
+  }
+
+  wb.addEventListener('mousedown',function(e){
+    if(e.target.closest('#minimap')||e.target.closest('#controls'))return;
+    drag=true;dsx=e.clientX;dsy=e.clientY;dox=ox;doy=oy;
+    wb.classList.add('grabbing');
+  });
+  window.addEventListener('mousemove',function(e){
+    if(!drag)return;
+    ox=dox+(e.clientX-dsx);oy=doy+(e.clientY-dsy);applyTransform();
+  });
+  window.addEventListener('mouseup',function(){drag=false;wb.classList.remove('grabbing');});
+
+  wb.addEventListener('wheel',function(e){
+    e.preventDefault();
+    var delta=e.deltaY<0?0.1:-0.1;
+    var nsc=clamp(sc+delta,.15,3);
+    var r=wb.getBoundingClientRect();
+    var mx=e.clientX-r.left,my=e.clientY-r.top;
+    ox=mx-(mx-ox)*(nsc/sc);
+    oy=my-(my-oy)*(nsc/sc);
+    sc=nsc;applyTransform();
+  },{passive:false});
+
+  wb.addEventListener('touchstart',function(e){
+    if(e.target.closest('#minimap')||e.target.closest('#controls'))return;
+    drag=true;dsx=e.touches[0].clientX;dsy=e.touches[0].clientY;dox=ox;doy=oy;
+  },{passive:true});
+  window.addEventListener('touchmove',function(e){
+    if(!drag)return;
+    ox=dox+(e.touches[0].clientX-dsx);oy=doy+(e.touches[0].clientY-dsy);applyTransform();
+  },{passive:true});
+  window.addEventListener('touchend',function(){drag=false;});
+
+  document.getElementById('btn-zi').onclick=function(){sc=clamp(sc+.2,.15,3);applyTransform();};
+  document.getElementById('btn-zo').onclick=function(){sc=clamp(sc-.2,.15,3);applyTransform();};
+  document.getElementById('btn-r').onclick=function(){ox=0;oy=0;sc=.45;applyTransform();};
+
+  sc=.45;
+  setTimeout(function(){applyTransform();drawArrows();},200);
+})();
+</script>
+</body>
+</html>
